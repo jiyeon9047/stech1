@@ -2,15 +2,15 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=1080"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>S-TECH DID 모니터</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Bebas+Neue&display=swap" rel="stylesheet"/>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     html, body {
-      width: 1080px;
-      height: 1920px;
+      width: 100%;
+      height: 100%;
       overflow: hidden;
       background: #080d14;
       font-family: 'Noto Sans KR', sans-serif;
@@ -23,7 +23,11 @@
       flex-direction: column;
       background: #080d14;
       overflow: hidden;
-      position: relative;
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transform-origin: center center;
     }
 
     /* ── 배경 장식 ── */
@@ -507,6 +511,21 @@ fetchRate();
 fetchWeather();
 setInterval(fetchRate, 3 * 60 * 1000);
 setInterval(fetchWeather, 10 * 60 * 1000);
+
+// 1080x1920 디자인을 실제 뷰포트 크기에 비율 유지한 채 맞춤
+function fitScreen() {
+  var w = window.innerWidth, h = window.innerHeight;
+  if (!w || !h) return; // 뷰포트가 0인 상태(숨김/프리로드)에서는 건너뜀
+  var scale = Math.min(w / 1080, h / 1920);
+  document.querySelector('.screen').style.transform =
+    'translate(-50%, -50%) scale(' + scale + ')';
+}
+window.addEventListener('resize', fitScreen);
+window.addEventListener('orientationchange', fitScreen);
+window.addEventListener('load', fitScreen);
+document.addEventListener('visibilitychange', fitScreen);
+setInterval(fitScreen, 1000); // 일부 DID 플레이어는 resize 이벤트를 안 보냄
+fitScreen();
 </script>
 </body>
 </html>
