@@ -33,7 +33,7 @@
     /* ── 배경 장식 ── */
     .bg-grid {
       position: absolute;
-      inset: 0;
+      top: 0; right: 0; bottom: 0; left: 0;
       background-image:
         linear-gradient(rgba(220,38,38,.04) 1px, transparent 1px),
         linear-gradient(90deg, rgba(220,38,38,.04) 1px, transparent 1px);
@@ -77,7 +77,6 @@
     .logo-area {
       display: flex;
       align-items: center;
-      gap: 0;
     }
     .logo-img {
       height: 80px;
@@ -147,14 +146,16 @@
       margin-bottom: 28px;
     }
 
-    .exrate-label-group { display: flex; align-items: center; gap: 20px; }
+    .exrate-label-group { display: flex; align-items: center; }
+    .exrate-label-group > * + * { margin-left: 20px; }
     .ex-flag { font-size: 3.8rem; line-height: 1; }
     .ex-currency-name { font-size: 3.2rem; font-weight: 900; color: #f1f5f9; letter-spacing: .06em; }
     .ex-pair { font-size: 1.35rem; color: #64748b; margin-top: 6px; font-weight: 400; }
 
     /* LIVE 배지 */
+    .live-badge > * + * { margin-left: 9px; }
     .live-badge {
-      display: inline-flex; align-items: center; gap: 9px;
+      display: inline-flex; align-items: center;
       background: rgba(16,185,129,.1);
       border: 1px solid rgba(16,185,129,.3);
       border-radius: 99px; padding: 8px 20px;
@@ -173,7 +174,6 @@
     .exrate-value-block {
       display: flex;
       align-items: flex-end;
-      gap: 0;
       line-height: 1;
     }
     .ex-won { font-size: 4rem; font-weight: 700; color: #ef4444; margin-right: 8px; line-height: 1.1; }
@@ -190,9 +190,10 @@
     .exrate-row-bottom {
       display: flex; align-items: center; justify-content: space-between; margin-top: 18px;
     }
+    .exrate-chg > * + * { margin-left: 8px; }
     .exrate-chg {
       font-size: 1.9rem; font-weight: 700; letter-spacing: .02em;
-      display: flex; align-items: center; gap: 8px;
+      display: flex; align-items: center;
     }
     .exrate-chg.up   { color: #f87171; }
     .exrate-chg.down { color: #60a5fa; }
@@ -209,8 +210,9 @@
       min-height: 0;
     }
 
+    .section-eyebrow > * + * { margin-left: 14px; }
     .section-eyebrow {
-      display: flex; align-items: center; gap: 14px;
+      display: flex; align-items: center;
       margin-bottom: 20px;
     }
     .eyebrow-bar { width: 4px; height: 28px; background: #dc2626; border-radius: 2px; }
@@ -238,7 +240,8 @@
     .tbl-head span:last-child    { text-align: right; }
 
     /* 도시 행 */
-    .city-rows { display: flex; flex-direction: column; gap: 12px; flex: 1; }
+    .city-rows { display: flex; flex-direction: column; flex: 1; }
+    .city-rows > * + * { margin-top: 12px; }
 
     .city-card {
       background: rgba(15,23,42,.7);
@@ -258,7 +261,8 @@
     }
     .city-card.highlight .city-name { color: #fca5a5; }
 
-    .city-info { display: flex; align-items: center; gap: 18px; }
+    .city-info { display: flex; align-items: center; }
+    .city-info > * + * { margin-left: 18px; }
     .flag-wrap {
       width: 72px; height: 50px; border-radius: 8px;
       overflow: hidden; flex-shrink: 0;
@@ -274,7 +278,8 @@
     .icon-cell { display: flex; justify-content: center; align-items: center; }
     .icon-cell svg { width: 48px; height: 48px; }
 
-    .temp-cell { display: flex; justify-content: center; align-items: baseline; gap: 3px; }
+    .temp-cell { display: flex; justify-content: center; align-items: baseline; }
+    .temp-cell > * + * { margin-left: 3px; }
     .temp-num { font-size: 2.8rem; font-weight: 900; font-variant-numeric: tabular-nums; }
     .temp-num.hot  { color: #f87171; }
     .temp-num.warm { color: #fb923c; }
@@ -300,7 +305,8 @@
       border-top: 1px solid rgba(255,255,255,.05);
       margin-top: 8px;
     }
-    .footer-left { display: flex; align-items: center; gap: 12px; }
+    .footer-left { display: flex; align-items: center; }
+    .footer-left > * + * { margin-left: 12px; }
     .footer-dot { width: 8px; height: 8px; border-radius: 50%; background: #10b981; animation: blink 2s infinite; }
     .footer-live-txt { font-size: 1.1rem; color: #475569; }
     .footer-note { font-size: 1.1rem; color: #334155; }
@@ -375,23 +381,24 @@
 </div>
 
 <script>
-const CITIES = [
+// 구형 DID 플레이어(옛 Android WebView / Tizen 등) 호환을 위해 ES5 문법만 사용
+var CITIES = [
   { id:'korea',    name:'한국',    emoji:'🇰🇷', img:'https://exc-web.vercel.app/_next/image?url=%2Fkorea.png&w=256&q=75',   tz:'Asia/Seoul',      lat:37.5665, lon:126.9780, highlight:true },
   { id:'shanghai', name:'상해',    emoji:'🇨🇳', img:'https://exc-web.vercel.app/_next/image?url=%2Fshanghai.png&w=256&q=75', tz:'Asia/Shanghai',   lat:31.2304, lon:121.4737 },
   { id:'taiyuan',  name:'타이위안', emoji:'🇨🇳', img:'https://exc-web.vercel.app/_next/image?url=%2Ftaiyuan.png&w=256&q=75', tz:'Asia/Shanghai',   lat:37.8706, lon:112.5489 },
   { id:'taiwan',   name:'대만',    emoji:'🇹🇼', img:'https://exc-web.vercel.app/_next/image?url=%2Ftaiwan.png&w=256&q=75',  tz:'Asia/Taipei',     lat:25.0330, lon:121.5654 },
-  { id:'dallas',   name:'댈러스',  emoji:'🇺🇸', img:'https://exc-web.vercel.app/_next/image?url=%2Fdallas.png&w=256&q=75',  tz:'America/Chicago', lat:32.7767, lon:-96.7970 },
+  { id:'dallas',   name:'댈러스',  emoji:'🇺🇸', img:'https://exc-web.vercel.app/_next/image?url=%2Fdallas.png&w=256&q=75',  tz:'America/Chicago', lat:32.7767, lon:-96.7970 }
 ];
 
-const I = {
-  sun:   `<svg viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>`,
-  moon:  `<svg viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>`,
-  cloud: `<svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>`,
-  rain:  `<svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6M8 14v6M12 16v6"/></svg>`,
-  snow:  `<svg viewBox="0 0 24 24" fill="none" stroke="#bfdbfe" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4M4 8l4 4-4 4M20 8l-4 4 4 4M4 16l4-4-4-4"/></svg>`,
-  storm: `<svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path d="m13 12-3 5h4l-3 5"/></svg>`,
-  fog:   `<svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h3m4 0h9M3 10h11m4 0h1M1 15h11m4 0h3M3 20h7m4 0h9"/></svg>`,
-  na:    `<svg viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 5.12 2.12c0 2-3 3-3 3M12 17h.01"/></svg>`,
+var I = {
+  sun:   '<svg viewBox="0 0 24 24" fill="none" stroke="#facc15" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="4"/><line x1="12" y1="20" x2="12" y2="22"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="2" y1="12" x2="4" y2="12"/><line x1="20" y1="12" x2="22" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>',
+  moon:  '<svg viewBox="0 0 24 24" fill="none" stroke="#a5b4fc" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.985 12.486a9 9 0 1 1-9.473-9.472c.405-.022.617.46.402.803a6 6 0 0 0 8.268 8.268c.344-.215.825-.004.803.401"/></svg>',
+  cloud: '<svg viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>',
+  rain:  '<svg viewBox="0 0 24 24" fill="none" stroke="#60a5fa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6M8 14v6M12 16v6"/></svg>',
+  snow:  '<svg viewBox="0 0 24 24" fill="none" stroke="#bfdbfe" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4M4 8l4 4-4 4M20 8l-4 4 4 4M4 16l4-4-4-4"/></svg>',
+  storm: '<svg viewBox="0 0 24 24" fill="none" stroke="#fbbf24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path d="m13 12-3 5h4l-3 5"/></svg>',
+  fog:   '<svg viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 5h3m4 0h9M3 10h11m4 0h1M1 15h11m4 0h3M3 20h7m4 0h9"/></svg>',
+  na:    '<svg viewBox="0 0 24 24" fill="none" stroke="#334155" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M9 9a3 3 0 0 1 5.12 2.12c0 2-3 3-3 3M12 17h.01"/></svg>'
 };
 
 function getIcon(wmo, isDay) {
@@ -415,98 +422,153 @@ function tempClass(t) {
   return 'cold';
 }
 
-const wx = {};
-CITIES.forEach(c => { wx[c.id] = { temp: null, wmo: null, isDay: 1 }; });
+// 간단한 JSON GET (fetch 미지원 환경 대비 XHR 사용)
+function getJSON(url, cb) {
+  try {
+    var x = new XMLHttpRequest();
+    x.open('GET', url + (url.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now(), true);
+    x.timeout = 15000;
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+      if (x.status >= 200 && x.status < 300) {
+        try { cb(null, JSON.parse(x.responseText)); } catch (e) { cb(e); }
+      } else {
+        cb(new Error('HTTP ' + x.status));
+      }
+    };
+    x.onerror = function () { cb(new Error('network')); };
+    x.ontimeout = function () { cb(new Error('timeout')); };
+    x.send();
+  } catch (e) { cb(e); }
+}
+
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+
+// Intl timeZone 미지원 환경을 위한 폴백 (고정 오프셋, 분 단위)
+var TZ_FALLBACK = { 'Asia/Seoul': 540, 'Asia/Shanghai': 480, 'Asia/Taipei': 480, 'America/Chicago': -300 };
+var tzSupported = (function () {
+  try { new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }); return true; } catch (e) { return false; }
+})();
+
+// 해당 타임존의 { h, m, s, day(0~6), y, mo, d } 반환
+function zoned(now, tz) {
+  if (tzSupported) {
+    var str = now.toLocaleString('en-US', {
+      timeZone: tz, hour12: false, year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: 'numeric', second: 'numeric'
+    });
+    // "9/9/2026, 15:49:21" 형태
+    var m = str.match(/(\d+)\/(\d+)\/(\d+),?\s+(\d+):(\d+):(\d+)/);
+    if (m) {
+      var h = parseInt(m[4], 10); if (h === 24) h = 0;
+      var dt = new Date(parseInt(m[3], 10), parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+      return { y: +m[3], mo: +m[1], d: +m[2], h: h, m: +m[5], s: +m[6], day: dt.getDay() };
+    }
+  }
+  var off = TZ_FALLBACK[tz] || 0;
+  var t = new Date(now.getTime() + (now.getTimezoneOffset() + off) * 60000);
+  return { y: t.getFullYear(), mo: t.getMonth() + 1, d: t.getDate(), h: t.getHours(), m: t.getMinutes(), s: t.getSeconds(), day: t.getDay() };
+}
+
+var wx = {};
+for (var ci = 0; ci < CITIES.length; ci++) wx[CITIES[ci].id] = { temp: null, wmo: null, isDay: 1 };
 
 function renderCities() {
-  const now = new Date();
-  document.getElementById('cityRows').innerHTML = CITIES.map(city => {
-    const w = wx[city.id];
-    const timeStr = now.toLocaleTimeString('ko-KR', {
-      timeZone: city.tz, hour: '2-digit', minute: '2-digit', hour12: false
-    });
-    const localStr = now.toLocaleString('ko-KR', { timeZone: city.tz, hour: 'numeric', hour12: true });
-    const ampm = localStr.startsWith('오전') ? 'AM' : localStr.startsWith('오후') ? 'PM' : '';
-    const tempTxt = w.temp != null ? Math.round(w.temp) : '--';
-    const tc = tempClass(w.temp);
-    const hl = city.highlight ? ' highlight' : '';
-    return `
-      <div class="city-card${hl}">
-        <div class="city-info">
-          <div class="flag-wrap">
-            <img src="${city.img}" alt="${city.emoji}" onerror="this.parentElement.innerHTML='<span class=flag-emoji>${city.emoji}</span>'"/>
-          </div>
-          <span class="city-name">${city.name}</span>
-        </div>
-        <div class="icon-cell">${getIcon(w.wmo, w.isDay)}</div>
-        <div class="temp-cell">
-          <span class="temp-num ${tc}">${tempTxt}</span>
-          <span class="temp-unit">°C</span>
-        </div>
-        <div class="time-cell">${timeStr}<span class="time-ampm">${ampm}</span></div>
-      </div>`;
-  }).join('');
-}
-
-const WD = ['일','월','화','수','목','금','토'];
-function updateClock() {
-  const now = new Date();
-  const localNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Seoul' }));
-  const ymd = now.toLocaleDateString('ko-KR', { timeZone:'Asia/Seoul', year:'numeric', month:'long', day:'numeric' });
-  const hms = now.toLocaleTimeString('ko-KR', { timeZone:'Asia/Seoul', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
-  document.getElementById('koDate').textContent = `${ymd} (${WD[localNow.getDay()]})`;
-  document.getElementById('koTime').textContent = hms;
-}
-
-let prevRate = null;
-async function fetchRate() {
-  let rate = null;
-  try {
-    const r = await fetch('https://api.exchangerate-api.com/v4/latest/USD', { cache:'no-store' });
-    if (r.ok) { const d = await r.json(); rate = d.rates?.KRW; }
-  } catch(_) {}
-  if (!rate) {
-    try {
-      const r = await fetch('https://api.frankfurter.app/latest?from=USD&to=KRW', { cache:'no-store' });
-      if (r.ok) { const d = await r.json(); rate = d.rates?.KRW; }
-    } catch(_) {}
+  var now = new Date();
+  var html = '';
+  for (var i = 0; i < CITIES.length; i++) {
+    var city = CITIES[i];
+    var w = wx[city.id];
+    var z = zoned(now, city.tz);
+    var timeStr = pad2(z.h) + ':' + pad2(z.m);
+    var ampm = z.h < 12 ? 'AM' : 'PM';
+    var tempTxt = w.temp != null ? Math.round(w.temp) : '--';
+    var tc = tempClass(w.temp);
+    var hl = city.highlight ? ' highlight' : '';
+    html +=
+      '<div class="city-card' + hl + '">' +
+        '<div class="city-info">' +
+          '<div class="flag-wrap">' +
+            '<img src="' + city.img + '" alt="' + city.emoji + '" onerror="this.parentElement.innerHTML=\'<span class=flag-emoji>' + city.emoji + '</span>\'"/>' +
+          '</div>' +
+          '<span class="city-name">' + city.name + '</span>' +
+        '</div>' +
+        '<div class="icon-cell">' + getIcon(w.wmo, w.isDay) + '</div>' +
+        '<div class="temp-cell">' +
+          '<span class="temp-num ' + tc + '">' + tempTxt + '</span>' +
+          '<span class="temp-unit">°C</span>' +
+        '</div>' +
+        '<div class="time-cell">' + timeStr + '<span class="time-ampm">' + ampm + '</span></div>' +
+      '</div>';
   }
-  if (!rate) return;
-  document.getElementById('rateVal').textContent = Math.round(rate).toLocaleString('ko-KR');
-  const el = document.getElementById('rateChg');
+  document.getElementById('cityRows').innerHTML = html;
+}
+
+var WD = ['일','월','화','수','목','금','토'];
+function seoulHMS() {
+  var z = zoned(new Date(), 'Asia/Seoul');
+  return pad2(z.h) + ':' + pad2(z.m) + ':' + pad2(z.s);
+}
+function updateClock() {
+  var z = zoned(new Date(), 'Asia/Seoul');
+  document.getElementById('koDate').textContent = z.y + '년 ' + z.mo + '월 ' + z.d + '일 (' + WD[z.day] + ')';
+  document.getElementById('koTime').textContent = pad2(z.h) + ':' + pad2(z.m) + ':' + pad2(z.s);
+}
+
+function formatNum(n) {
+  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+var prevRate = null;
+function applyRate(rate) {
+  document.getElementById('rateVal').textContent = formatNum(rate);
+  var el = document.getElementById('rateChg');
   if (prevRate !== null) {
-    const diff = rate - prevRate;
+    var diff = rate - prevRate;
     if (Math.abs(diff) < 0.3) {
       el.textContent = '전일 대비 변동 없음'; el.className = 'exrate-chg flat';
     } else if (diff > 0) {
-      el.textContent = `▲ ${diff.toFixed(2)}원 상승`; el.className = 'exrate-chg up';
+      el.textContent = '▲ ' + diff.toFixed(2) + '원 상승'; el.className = 'exrate-chg up';
     } else {
-      el.textContent = `▼ ${Math.abs(diff).toFixed(2)}원 하락`; el.className = 'exrate-chg down';
+      el.textContent = '▼ ' + Math.abs(diff).toFixed(2) + '원 하락'; el.className = 'exrate-chg down';
     }
   } else {
     el.textContent = 'USD 기준 실시간 매매 환율'; el.className = 'exrate-chg flat';
   }
   prevRate = rate;
-  const t = new Date().toLocaleTimeString('ko-KR', { timeZone:'Asia/Seoul', hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false });
-  document.getElementById('rateTime').textContent = '최종 갱신 ' + t;
+  document.getElementById('rateTime').textContent = '최종 갱신 ' + seoulHMS();
+}
+function fetchRate() {
+  getJSON('https://api.exchangerate-api.com/v4/latest/USD', function (err, d) {
+    var rate = (!err && d && d.rates) ? d.rates.KRW : null;
+    if (rate) return applyRate(rate);
+    // 백업: frankfurter (구 .app 도메인은 리다이렉트되어 실패하므로 .dev/v1 사용)
+    getJSON('https://api.frankfurter.dev/v1/latest?base=USD&symbols=KRW', function (err2, d2) {
+      var r2 = (!err2 && d2 && d2.rates) ? d2.rates.KRW : null;
+      if (r2) applyRate(r2);
+    });
+  });
 }
 
-async function fetchWeather() {
-  await Promise.allSettled(CITIES.map(async city => {
-    try {
-      const url = `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}&current=temperature_2m,weathercode,is_day&timezone=auto`;
-      const r = await fetch(url, { cache:'no-store' });
-      if (!r.ok) return;
-      const d = await r.json();
-      wx[city.id] = { temp: d.current.temperature_2m, wmo: d.current.weathercode, isDay: d.current.is_day };
-    } catch(_) {}
-  }));
-  renderCities();
+function fetchWeather() {
+  var pending = CITIES.length;
+  function done() { if (--pending === 0) renderCities(); }
+  for (var i = 0; i < CITIES.length; i++) {
+    (function (city) {
+      var url = 'https://api.open-meteo.com/v1/forecast?latitude=' + city.lat + '&longitude=' + city.lon + '&current=temperature_2m,weathercode,is_day&timezone=auto';
+      getJSON(url, function (err, d) {
+        if (!err && d && d.current) {
+          wx[city.id] = { temp: d.current.temperature_2m, wmo: d.current.weathercode, isDay: d.current.is_day };
+        }
+        done();
+      });
+    })(CITIES[i]);
+  }
 }
 
 updateClock();
 renderCities();
-setInterval(() => { updateClock(); renderCities(); }, 1000);
+setInterval(function () { updateClock(); renderCities(); }, 1000);
 fetchRate();
 fetchWeather();
 setInterval(fetchRate, 3 * 60 * 1000);
@@ -514,11 +576,14 @@ setInterval(fetchWeather, 10 * 60 * 1000);
 
 // 1080x1920 디자인을 실제 뷰포트 크기에 비율 유지한 채 맞춤
 function fitScreen() {
-  var w = window.innerWidth, h = window.innerHeight;
+  var w = window.innerWidth || document.documentElement.clientWidth;
+  var h = window.innerHeight || document.documentElement.clientHeight;
   if (!w || !h) return; // 뷰포트가 0인 상태(숨김/프리로드)에서는 건너뜀
   var scale = Math.min(w / 1080, h / 1920);
-  document.querySelector('.screen').style.transform =
-    'translate(-50%, -50%) scale(' + scale + ')';
+  var el = document.querySelector('.screen');
+  var t = 'translate(-50%, -50%) scale(' + scale + ')';
+  el.style.webkitTransform = t;
+  el.style.transform = t;
 }
 window.addEventListener('resize', fitScreen);
 window.addEventListener('orientationchange', fitScreen);
