@@ -24,10 +24,10 @@
       background: #080d14;
       overflow: hidden;
       position: absolute;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      transform-origin: center center;
+      top: 0;
+      left: 0;
+      -webkit-transform-origin: 0 0;
+      transform-origin: 0 0;
     }
 
     /* ── 배경 장식 ── */
@@ -574,14 +574,33 @@ fetchWeather();
 setInterval(fetchRate, 3 * 60 * 1000);
 setInterval(fetchWeather, 10 * 60 * 1000);
 
-// 1080x1920 디자인을 실제 뷰포트 크기에 비율 유지한 채 맞춤
+// 1080x1920 디자인을 실제 뷰포트 크기에 맞춤
+// 기본: 비율 유지(letterbox) - 일반 브라우저에서 정상적으로 보임
+// ?fill=1 : 가로/세로를 각각 꽉 채움(비율 무시).
+//   xtmCAST 등 일부 플레이어는 페이지를 가로(16:9) 화면으로 렌더한 뒤
+//   그 결과를 세로 패널에 늘려 붙인다. 이때 미리 반대로 찌그러뜨려 두면
+//   플레이어의 왜곡과 상쇄되어 패널에서는 정상 비율로 나온다.
+var FILL_MODE = /[?&]fill=1/.test(window.location.search);
+
 function fitScreen() {
-  var w = window.innerWidth || document.documentElement.clientWidth;
-  var h = window.innerHeight || document.documentElement.clientHeight;
+  // CSS 퍼센트가 기준으로 삼는 레이아웃 뷰포트를 우선 사용한다.
+  // (window.innerWidth 는 스크롤바/줌/에뮬레이션에서 어긋날 수 있음)
+  var d = document.documentElement;
+  var w = d.clientWidth || window.innerWidth;
+  var h = d.clientHeight || window.innerHeight;
   if (!w || !h) return; // 뷰포트가 0인 상태(숨김/프리로드)에서는 건너뜀
-  var scale = Math.min(w / 1080, h / 1920);
+  var sx, sy;
+  if (FILL_MODE) {
+    sx = w / 1080;
+    sy = h / 1920;
+  } else {
+    sx = sy = Math.min(w / 1080, h / 1920);
+  }
+  // 좌상단 기준으로 스케일한 뒤 남는 여백을 픽셀로 직접 계산해 중앙 정렬한다.
+  var tx = (w - 1080 * sx) / 2;
+  var ty = (h - 1920 * sy) / 2;
   var el = document.querySelector('.screen');
-  var t = 'translate(-50%, -50%) scale(' + scale + ')';
+  var t = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + sx + ', ' + sy + ')';
   el.style.webkitTransform = t;
   el.style.transform = t;
 }
