@@ -271,8 +271,8 @@
         <div class="cal-top">
           <div class="cal-month" id="calTitle0">—</div>
           <div class="legend">
-            <div class="lg"><i class="i-off"></i>휴무(공휴일)</div>
-            <div class="lg"><i class="i-work"></i>조정 근무일(출근)</div>
+            <div class="lg"><i class="i-off"></i>공휴일</div>
+            <div class="lg"><i class="i-work"></i>조정 근무일</div>
             <div class="lg"><i class="i-today"></i>오늘</div>
           </div>
         </div>
@@ -298,7 +298,7 @@
   <!-- ── FOOTER ── -->
   <div class="footer">
     <div class="footer-left"><div class="footer-dot"></div>실시간 업데이트 중</div>
-    <div id="srcNote">출처: 중국 국무원 판공청 공휴일 통지</div>
+    <div>출처: 중국 국무원</div>
   </div>
 </div>
 
@@ -519,14 +519,13 @@ function renderHero(T) {
     html =
       '<div class="hero-row">' +
         '<div class="hero-main">' +
-          '<div class="hero-badge">지금 중국은 연휴 중</div>' +
+          '<div class="hero-badge">연휴 중</div>' +
           '<div class="hero-name">' + now.ko + '<span class="cn">' + now.name + '</span></div>' +
           '<div class="hero-range">' + fmtRange(now.start, now.end) + ' · ' + len + '일간 휴무</div>' +
           '<div class="hero-act">업무 복귀 <b>' + fmtMD(returnDay(now)) + '</b></div>' +
         '</div>' +
         '<div class="hero-side">' +
           '<div class="hero-dday">' + nth + '/' + len + '</div>' +
-          '<div class="hero-dday-sub">연휴 ' + nth + '일째</div>' +
         '</div>' +
       '</div>';
   } else if (next) {
@@ -542,7 +541,6 @@ function renderHero(T) {
         '</div>' +
         '<div class="hero-side">' +
           '<div class="hero-dday">D-' + dd + '</div>' +
-          '<div class="hero-dday-sub">' + (dd === 1 ? '내일부터 연휴' : '연휴 시작까지') + '</div>' +
         '</div>' +
       '</div>';
   } else {
@@ -596,7 +594,7 @@ function renderMonth(idx, y, mo, T) {
   var known = yearDays[y] && yearDays[y].length;
   document.getElementById('calTitle' + idx).innerHTML =
     y + '년 ' + mo + '월<span>' +
-    (!known ? y + '년 공휴일 일정 발표 전' : (offCount ? '공휴일 휴무 ' + offCount + '일' : '공휴일 없음')) + '</span>';
+    (!known ? '일정 발표 전' : (offCount ? '휴무 ' + offCount + '일' : '')) + '</span>';
 }
 
 function renderList(T) {
@@ -623,10 +621,9 @@ function renderList(T) {
         '<div class="hl-state">' + state + '</div>' +
       '</div>';
   }
-  if (!count) html = '<div class="hl-empty">' + year + '년 공휴일 일정이 아직 발표되지 않았습니다.</div>';
+  if (!count) html = '<div class="hl-empty">일정 발표 전</div>';
   document.getElementById('hlRows').innerHTML = html;
   document.getElementById('listTitle').textContent = year + '년 중국 법정 공휴일';
-  document.getElementById('srcNote').textContent = '출처: 중국 국무원 판공청 ' + year + '년 공휴일 통지';
 }
 
 var lastT = null;
