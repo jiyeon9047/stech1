@@ -580,7 +580,11 @@ setInterval(fetchWeather, 10 * 60 * 1000);
 //   xtmCAST 등 일부 플레이어는 페이지를 가로(16:9) 화면으로 렌더한 뒤
 //   그 결과를 세로 패널에 늘려 붙인다. 이때 미리 반대로 찌그러뜨려 두면
 //   플레이어의 왜곡과 상쇄되어 패널에서는 정상 비율로 나온다.
-var FILL_MODE = /[?&]fill=1/.test(window.location.search);
+// 플레이어가 쿼리스트링을 떼어낼 수 있으므로 #fill=1 형태도 허용한다.
+var URL_FLAGS = window.location.search + window.location.hash;
+var FILL_MODE = /[?&#]fill=1/.test(URL_FLAGS);
+// ?debug=1 : 플레이어 브라우저가 보고하는 뷰포트 값과 뷰포트 경계를 화면에 표시
+var DEBUG_MODE = /[?&#]debug=1/.test(URL_FLAGS);
 
 function fitScreen() {
   // CSS 퍼센트가 기준으로 삼는 레이아웃 뷰포트를 우선 사용한다.
@@ -603,6 +607,41 @@ function fitScreen() {
   var t = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + sx + ', ' + sy + ')';
   el.style.webkitTransform = t;
   el.style.transform = t;
+  if (DEBUG_MODE) renderDebug();
+}
+
+function renderDebug() {
+  var box = document.getElementById('dbg');
+  if (!box) {
+    // 자홍색 테두리 = 페이지가 받은 뷰포트의 실제 경계
+    var frame = document.createElement('div');
+    frame.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;' +
+      'border:8px solid #ff00ff;z-index:9998;pointer-events:none;';
+    document.body.appendChild(frame);
+    box = document.createElement('div');
+    box.id = 'dbg';
+    box.style.cssText = 'position:fixed;left:16px;top:16px;right:16px;z-index:9999;' +
+      'background:rgba(0,0,0,.85);color:#00ff66;font-family:monospace;' +
+      'white-space:pre-wrap;word-break:break-all;padding:12px;line-height:1.35;';
+    document.body.appendChild(box);
+  }
+  var d = document.documentElement;
+  var el = document.querySelector('.screen');
+  var r = el.getBoundingClientRect();
+  var ds = d.style;
+  box.style.fontSize = Math.max(12, Math.round(Math.min(d.clientWidth, d.clientHeight) / 26)) + 'px';
+  box.textContent = [
+    'inner   ' + window.innerWidth + ' x ' + window.innerHeight,
+    'client  ' + d.clientWidth + ' x ' + d.clientHeight,
+    'screen  ' + screen.width + ' x ' + screen.height,
+    'dpr     ' + (window.devicePixelRatio || 1),
+    'fill    ' + FILL_MODE,
+    'flags   ' + (URL_FLAGS || '(없음)'),
+    'tf-css  ' + (('transform' in ds) || ('webkitTransform' in ds)),
+    'content ' + Math.round(r.left) + ',' + Math.round(r.top) + '  ' +
+      Math.round(r.right - r.left) + ' x ' + Math.round(r.bottom - r.top),
+    'ua      ' + navigator.userAgent
+  ].join('\n');
 }
 window.addEventListener('resize', fitScreen);
 window.addEventListener('orientationchange', fitScreen);
