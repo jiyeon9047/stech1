@@ -2,7 +2,7 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"/>
   <title>S-TECH DID 모니터</title>
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700;900&family=Bebas+Neue&display=swap" rel="stylesheet"/>
   <style>
@@ -23,7 +23,9 @@
       flex-direction: column;
       background: #080d14;
       overflow: hidden;
-      position: absolute;
+      /* fixed: 축소 전 1080x1920 박스가 문서 크기를 키우지 않게 한다.
+         문서가 화면보다 크면 WebView가 페이지를 축소해 여백이 생길 수 있다. */
+      position: fixed;
       top: 0;
       left: 0;
       -webkit-transform-origin: 0 0;
@@ -574,15 +576,11 @@ fetchWeather();
 setInterval(fetchRate, 3 * 60 * 1000);
 setInterval(fetchWeather, 10 * 60 * 1000);
 
-// 1080x1920 디자인을 실제 뷰포트 크기에 맞춤
-// 기본: 비율 유지(letterbox) - 일반 브라우저에서 정상적으로 보임
-// ?fill=1 : 가로/세로를 각각 꽉 채움(비율 무시).
-//   xtmCAST 등 일부 플레이어는 페이지를 가로(16:9) 화면으로 렌더한 뒤
-//   그 결과를 세로 패널에 늘려 붙인다. 이때 미리 반대로 찌그러뜨려 두면
-//   플레이어의 왜곡과 상쇄되어 패널에서는 정상 비율로 나온다.
-// 플레이어가 쿼리스트링을 떼어낼 수 있으므로 #fill=1 형태도 허용한다.
+// 1080x1920 디자인을 뷰포트의 가로/세로에 각각 꽉 맞춘다(비율 무시, 여백 없음).
+// xtrmCAST 플레이어(가로형 설정)는 웹페이지를 세로 패널과 다른 비율의 영역에
+// 그리므로, 여백 없이 채우는 것을 우선한다. 일반 브라우저에서는 찌그러져 보일 수 있다.
+// 플레이어가 쿼리스트링을 떼어낼 수 있으므로 #debug=1 형태도 허용한다.
 var URL_FLAGS = window.location.search + window.location.hash;
-var FILL_MODE = /[?&#]fill=1/.test(URL_FLAGS);
 // ?debug=1 : 플레이어 브라우저가 보고하는 뷰포트 값과 뷰포트 경계를 화면에 표시
 var DEBUG_MODE = /[?&#]debug=1/.test(URL_FLAGS);
 
@@ -593,18 +591,10 @@ function fitScreen() {
   var w = d.clientWidth || window.innerWidth;
   var h = d.clientHeight || window.innerHeight;
   if (!w || !h) return; // 뷰포트가 0인 상태(숨김/프리로드)에서는 건너뜀
-  var sx, sy;
-  if (FILL_MODE) {
-    sx = w / 1080;
-    sy = h / 1920;
-  } else {
-    sx = sy = Math.min(w / 1080, h / 1920);
-  }
-  // 좌상단 기준으로 스케일한 뒤 남는 여백을 픽셀로 직접 계산해 중앙 정렬한다.
-  var tx = (w - 1080 * sx) / 2;
-  var ty = (h - 1920 * sy) / 2;
+  var sx = w / 1080;
+  var sy = h / 1920;
   var el = document.querySelector('.screen');
-  var t = 'translate(' + tx + 'px, ' + ty + 'px) scale(' + sx + ', ' + sy + ')';
+  var t = 'scale(' + sx + ', ' + sy + ')'; // transform-origin 0 0 기준
   el.style.webkitTransform = t;
   el.style.transform = t;
   if (DEBUG_MODE) renderDebug();
@@ -635,7 +625,6 @@ function renderDebug() {
     'client  ' + d.clientWidth + ' x ' + d.clientHeight,
     'screen  ' + screen.width + ' x ' + screen.height,
     'dpr     ' + (window.devicePixelRatio || 1),
-    'fill    ' + FILL_MODE,
     'flags   ' + (URL_FLAGS || '(없음)'),
     'tf-css  ' + (('transform' in ds) || ('webkitTransform' in ds)),
     'content ' + Math.round(r.left) + ',' + Math.round(r.top) + '  ' +
