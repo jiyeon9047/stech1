@@ -1,0 +1,48 @@
+# DID 금리·유가 페이지(markets/)용 데이터를 30분마다 받아 market-data 브랜치에 올린다.
+# 페이지는 raw.githubusercontent.com 에서 이 파일을 읽는다(브라우저 CORS 허용).
+# 매번 단일 커밋으로 덮어써서 main 기록과 Pages 빌드에는 영향을 주지 않는다.
+name: market-data
+
+on:
+  schedule:
+    - cron: '7,37 * * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: market-data
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Load previous data
+        run: |
+          if git fetch --depth=1 origin market-data 2>/dev/null; then
+            git show FETCH_HEAD:markets.json > prev.json
+          else
+            echo '{}' > prev.json
+          fi
+
+      - name: Fetch market data
+        env:
+          ECOS_API_KEY: ${{ secrets.ECOS_API_KEY }}
+        run: python3 scripts/fetch_markets.py prev.json markets.json
+
+      - name: Publish to market-data branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -q --orphan market-data-tmp
+          git rm -rq --cached .
+          git add -f markets.json
+          git commit -qm "Update market data"
+          git push -qf origin HEAD:market-data
