@@ -1,0 +1,457 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"/>
+  <title>S-TECH 난방 가동 안내</title>
+  <link href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" rel="stylesheet"/>
+  <link href="../assets/did.css" rel="stylesheet"/>
+  <style>
+    /* 상태에 따라 배경 빛 색이 바뀐다 */
+    .glow { position: absolute; left: 0; top: 0; right: 0; bottom: 0; pointer-events: none; }
+    .screen.on  .glow { background: radial-gradient(1100px 900px at 50% 58%, rgba(52,211,153,.13), transparent 70%); }
+    .screen.off .glow { background: radial-gradient(1100px 900px at 50% 58%, rgba(242,82,91,.13), transparent 70%); }
+    .screen > *:not(.glow) { position: relative; }
+
+    /* ════════════════════════════
+       현재 기온
+    ════════════════════════════ */
+    .now { flex-shrink: 0; display: flex; align-items: center; padding: 44px 56px; }
+    .now-left { flex: 1; min-width: 0; }
+    .now-loc { font-size: 1.6rem; font-weight: 600; color: #8b93a3; }
+    .now-temp {
+      font-size: 15rem; font-weight: 800; letter-spacing: -.05em; line-height: 1;
+      color: #ffffff; font-variant-numeric: tabular-nums; margin-top: 10px; white-space: nowrap;
+    }
+    .now-temp .u { font-size: .34em; font-weight: 600; color: #7b8494; letter-spacing: 0; margin-left: 10px; vertical-align: .95em; }
+    .now-temp.na { color: #2b3240; }
+    .now-right { width: 300px; flex-shrink: 0; text-align: right; }
+    .wx-icon { width: 120px; height: 120px; display: inline-block; }
+    .wx-icon svg { width: 100%; height: 100%; }
+    .wx-desc { font-size: 2.1rem; font-weight: 700; color: #e6e9ef; margin-top: 10px; }
+    .stats { margin-top: 26px; }
+    .stat { display: flex; justify-content: space-between; align-items: baseline; font-size: 1.45rem; color: #6b7384; padding: 8px 0; border-top: 1px solid rgba(255,255,255,.06); }
+    .stat b { font-size: 1.9rem; font-weight: 700; color: #d5dae3; font-variant-numeric: tabular-nums; }
+    .stat b.lo { color: #6ea8ff; }
+    .stat b.hi { color: #ff6b6b; }
+
+    /* ════════════════════════════
+       판정
+    ════════════════════════════ */
+    .verdict {
+      flex: 1; min-height: 0; margin-top: 30px;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      border-radius: 40px; text-align: center;
+      background: rgba(255,255,255,.03); border: 3px solid rgba(255,255,255,.08);
+    }
+    .verdict-icon { width: 220px; height: 220px; }
+    .verdict-icon svg { width: 100%; height: 100%; }
+    .verdict-title { font-size: 9rem; font-weight: 900; letter-spacing: -.04em; line-height: 1; margin-top: 30px; color: #3a4252; }
+    .verdict-sub { display: inline-block; margin-top: 34px; padding: 12px 34px; border-radius: 999px; font-size: 2rem; font-weight: 700; color: #6b7384; background: rgba(255,255,255,.05); font-variant-numeric: tabular-nums; }
+    .screen.on .verdict  { background: linear-gradient(180deg, rgba(52,211,153,.16), rgba(52,211,153,.06)); border-color: rgba(52,211,153,.55); }
+    .screen.on .verdict-title { color: #34d399; }
+    .screen.on .verdict-sub { color: #a7f3d0; background: rgba(52,211,153,.14); }
+    .screen.off .verdict { background: linear-gradient(180deg, rgba(242,82,91,.16), rgba(242,82,91,.06)); border-color: rgba(242,82,91,.55); }
+    .screen.off .verdict-title { color: #f2525b; }
+    .screen.off .verdict-sub { color: #fecaca; background: rgba(242,82,91,.14); }
+
+    /* ════════════════════════════
+       기준 게이지
+    ════════════════════════════ */
+    .gauge-wrap { flex-shrink: 0; margin-top: 30px; padding: 34px 56px 30px; }
+    .gauge { position: relative; height: 34px; margin: 64px 0 0; }
+    .g-bar { position: absolute; top: 0; height: 100%; }
+    .g-bar.on  { left: 0; border-radius: 17px 0 0 17px; background: linear-gradient(90deg, rgba(52,211,153,.25), rgba(52,211,153,.75)); }
+    .g-bar.off { right: 0; border-radius: 0 17px 17px 0; background: linear-gradient(90deg, rgba(242,82,91,.75), rgba(242,82,91,.25)); }
+    .g-th { position: absolute; top: -14px; bottom: -14px; width: 4px; margin-left: -2px; background: #f8fafc; border-radius: 2px; }
+    .g-th-lbl { position: absolute; bottom: 100%; margin-bottom: 18px; transform: translateX(-50%); -webkit-transform: translateX(-50%); font-size: 1.5rem; font-weight: 800; color: #f8fafc; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .g-mark { position: absolute; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px; border-radius: 50%; background: #ffffff; border: 8px solid #090c12; box-shadow: 0 0 0 3px #ffffff, 0 0 26px rgba(255,255,255,.5); display: none; }
+    .g-mark-lbl { position: absolute; top: 100%; margin-top: 26px; transform: translateX(-50%); -webkit-transform: translateX(-50%); font-size: 1.5rem; font-weight: 800; color: #ffffff; white-space: nowrap; font-variant-numeric: tabular-nums; display: none; }
+    .g-scale { position: relative; height: 30px; margin-top: 82px; font-size: 1.15rem; color: #4a5263; font-variant-numeric: tabular-nums; }
+    .g-scale span { position: absolute; transform: translateX(-50%); -webkit-transform: translateX(-50%); }
+    .g-zones { display: flex; justify-content: space-between; margin-top: 6px; font-size: 1.35rem; font-weight: 700; }
+    .g-zones .z-on { color: #34d399; }
+    .g-zones .z-off { color: #f2525b; }
+
+    /* ════════════════════════════
+       시간별 예보
+    ════════════════════════════ */
+    .hours-wrap { flex-shrink: 0; margin-top: 30px; }
+    .hours { display: flex; padding: 26px 20px; }
+    .h-col { flex: 1; text-align: center; }
+    .h-col + .h-col { border-left: 1px solid rgba(255,255,255,.05); }
+    .h-time { font-size: 1.3rem; color: #6b7384; font-variant-numeric: tabular-nums; }
+    .h-temp { font-size: 1.75rem; font-weight: 800; color: #e6e9ef; margin-top: 12px; font-variant-numeric: tabular-nums; letter-spacing: -.03em; white-space: nowrap; }
+    .h-temp.long { font-size: 1.4rem; letter-spacing: -.04em; }
+    .sec-meta i { font-style: normal; }
+    .sec-meta .k-on { color: #34d399; }
+    .sec-meta .k-off { color: #f2525b; margin-left: 18px; }
+    .h-dot { width: 16px; height: 16px; border-radius: 50%; margin: 14px auto 0; background: #2b3240; }
+    .h-dot.on  { background: #34d399; box-shadow: 0 0 12px rgba(52,211,153,.6); }
+    .h-dot.off { background: #f2525b; box-shadow: 0 0 12px rgba(242,82,91,.6); }
+
+  </style>
+</head>
+<body>
+<div class="screen" id="screen">
+  <div class="glow"></div>
+
+  <div class="topbar"></div>
+  <div class="hdr">
+    <div class="brand">
+      <img class="logo" src="../assets/logo.gif" alt="S-TECH"/>
+      <div class="brand-txt">
+        <div class="eyebrow">HEATING GUIDE</div>
+        <div class="title">난방 가동 안내</div>
+      </div>
+    </div>
+    <div class="clock">
+      <div class="clock-time" id="koTime">--:--:--</div>
+      <div class="clock-date" id="koDate">—</div>
+    </div>
+  </div>
+
+  <div class="main">
+    <!-- 현재 기온 -->
+    <div class="panel now">
+      <div class="now-left">
+        <div class="now-loc" id="loc">현재 기온</div>
+        <div class="now-temp na" id="nowTemp">--<span class="u">℃</span></div>
+      </div>
+      <div class="now-right">
+        <div class="wx-icon" id="wxIcon"></div>
+        <div class="wx-desc" id="wxDesc">&nbsp;</div>
+        <div class="stats">
+          <div class="stat"><span>체감</span><b id="feels">--</b></div>
+          <div class="stat"><span>최저 / 최고</span><b><span class="lo" id="lo">--</span> / <span class="hi" id="hi">--</span></b></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 판정 -->
+    <div class="verdict">
+      <div class="verdict-icon" id="vIcon"></div>
+      <div class="verdict-title" id="vTitle">확인 중</div>
+      <div class="verdict-sub" id="vSub">기준 10℃ 이하 난방 가동</div>
+    </div>
+
+    <!-- 기준 게이지 -->
+    <div class="panel gauge-wrap">
+      <div class="gauge" id="gauge">
+        <div class="g-bar on" id="gOn"></div>
+        <div class="g-bar off" id="gOff"></div>
+        <div class="g-th" id="gTh"><div class="g-th-lbl" id="gThLbl"></div></div>
+        <div class="g-mark" id="gMark"></div>
+        <div class="g-mark-lbl" id="gMarkLbl"></div>
+      </div>
+      <div class="g-scale" id="gScale"></div>
+      <div class="g-zones"><span class="z-on">◀ 난방 가능</span><span class="z-off">난방 금지 ▶</span></div>
+    </div>
+
+    <!-- 시간별 예보 -->
+    <div class="hours-wrap">
+      <div class="sec-head">
+        <div class="sec-title"><span class="sec-bar"></span><span class="sec-name">시간별 예보</span><span class="sec-en">NEXT 12 HOURS</span></div>
+        <div class="sec-meta">℃ &nbsp;·&nbsp; <i class="k-on">●</i> 가능 <i class="k-off">●</i> 금지</div>
+      </div>
+      <div class="panel hours" id="hours"></div>
+    </div>
+  </div>
+
+  <!-- ── FOOTER ── -->
+  <div class="footer">
+    <div class="footer-left" id="upBox"><div class="footer-dot"></div><span id="upTxt">불러오는 중</span></div>
+    <div>출처: Open-Meteo</div>
+  </div>
+</div>
+
+<script>
+// 구형 DID 플레이어(옛 Android WebView / Tizen 등) 호환을 위해 ES5 문법만 사용
+
+// ── 설정 ──
+var THRESHOLD = 10;                     // 이 온도(℃) 이하이면 난방 가능
+var LOCATION = { name: '서울', lat: 37.5665, lon: 126.9780 };
+var GAUGE_MIN = -10, GAUGE_MAX = 30;    // 게이지 눈금 범위(℃)
+var CACHE_KEY = 'stech-heating';
+var STALE_MS = 60 * 60 * 1000;          // 1시간 넘게 갱신이 없으면 하단 표시를 주황색으로
+
+var DATA_URL = 'https://api.open-meteo.com/v1/forecast?latitude=' + LOCATION.lat + '&longitude=' + LOCATION.lon +
+  '&current=temperature_2m,apparent_temperature,weathercode,is_day' +
+  '&hourly=temperature_2m&daily=temperature_2m_max,temperature_2m_min' +
+  '&forecast_days=2&timezone=Asia%2FSeoul';
+
+// 간단한 JSON GET (fetch 미지원 환경 대비 XHR 사용)
+function getJSON(url, cb) {
+  try {
+    var x = new XMLHttpRequest();
+    x.open('GET', url + (url.indexOf('?') >= 0 ? '&' : '?') + '_t=' + Date.now(), true);
+    x.timeout = 15000;
+    x.onreadystatechange = function () {
+      if (x.readyState !== 4) return;
+      if (x.status >= 200 && x.status < 300) {
+        try { cb(null, JSON.parse(x.responseText)); } catch (e) { cb(e); }
+      } else {
+        cb(new Error('HTTP ' + x.status));
+      }
+    };
+    x.onerror = function () { cb(new Error('network')); };
+    x.ontimeout = function () { cb(new Error('timeout')); };
+    x.send();
+  } catch (e) { cb(e); }
+}
+
+function pad2(n) { return (n < 10 ? '0' : '') + n; }
+function $(id) { return document.getElementById(id); }
+// 화면에 보이는 소수 첫째 자리 값으로 판정해야 "10.0℃인데 금지" 같은 어긋남이 없다
+function r1(n) { return Math.round(n * 10) / 10; }
+function fmt1(n) { var v = r1(n); return (v < 0 ? '−' : '') + Math.abs(v).toFixed(1); }
+function fmt0(n) { var v = Math.round(n); return (v < 0 ? '−' : '') + Math.abs(v); }
+function allowed(t) { return r1(t) <= THRESHOLD; }
+
+// 한국 시각 { y, mo, d, h, m, s, day }. 한국은 서머타임이 없어 +9시간 폴백으로 충분하다.
+var tzSupported = (function () {
+  try { new Date().toLocaleString('en-US', { timeZone: 'Asia/Seoul' }); return true; } catch (e) { return false; }
+})();
+function seoul(t) {
+  var now = t ? new Date(t) : new Date();
+  if (tzSupported) {
+    var str = now.toLocaleString('en-US', {
+      timeZone: 'Asia/Seoul', hour12: false, year: 'numeric', month: 'numeric', day: 'numeric',
+      hour: 'numeric', minute: 'numeric', second: 'numeric'
+    });
+    var m = str.match(/(\d+)\/(\d+)\/(\d+),?\s+(\d+):(\d+):(\d+)/);
+    if (m) {
+      var h = parseInt(m[4], 10); if (h === 24) h = 0;
+      var dt = new Date(parseInt(m[3], 10), parseInt(m[1], 10) - 1, parseInt(m[2], 10));
+      return { y: +m[3], mo: +m[1], d: +m[2], h: h, m: +m[5], s: +m[6], day: dt.getDay() };
+    }
+  }
+  var k = new Date(now.getTime() + (now.getTimezoneOffset() + 540) * 60000);
+  return { y: k.getFullYear(), mo: k.getMonth() + 1, d: k.getDate(), h: k.getHours(), m: k.getMinutes(), s: k.getSeconds(), day: k.getDay() };
+}
+
+var WD = ['일', '월', '화', '수', '목', '금', '토'];
+function updateClock() {
+  var z = seoul();
+  $('koTime').textContent = pad2(z.h) + ':' + pad2(z.m) + ':' + pad2(z.s);
+  $('koDate').textContent = z.y + '년 ' + z.mo + '월 ' + z.d + '일 (' + WD[z.day] + ')';
+}
+function fmtTime(ms) {
+  var z = seoul(ms);
+  return pad2(z.mo) + '.' + pad2(z.d) + ' ' + pad2(z.h) + ':' + pad2(z.m);
+}
+
+// ── 아이콘 ──
+var SV = '<svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ';
+var I = {
+  sun:   SV + 'stroke="#facc15"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></svg>',
+  moon:  SV + 'stroke="#a5b4fc"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>',
+  cloud: SV + 'stroke="#cbd5e1"><path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z"/></svg>',
+  rain:  SV + 'stroke="#60a5fa"><path d="M4 14.899A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 2.5 8.242"/><path d="M16 14v6M8 14v6M12 16v6"/></svg>',
+  snow:  SV + 'stroke="#bfdbfe"><path d="M12 2v20M2 12h20M20 16l-4-4 4-4M4 8l4 4-4 4M16 4l-4 4-4-4M8 20l4-4 4 4"/></svg>',
+  storm: SV + 'stroke="#fbbf24"><path d="M6 16.326A7 7 0 1 1 15.71 8h1.79a4.5 4.5 0 0 1 .5 8.973"/><path d="m13 12-3 5h4l-3 5"/></svg>',
+  fog:   SV + 'stroke="#94a3b8"><path d="M5 5h3m4 0h9M3 10h11m4 0h1M1 15h11m4 0h3M3 20h7m4 0h9"/></svg>'
+};
+var FLAME = '<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>';
+var V_ON  = SV.replace('stroke-width="2"', 'stroke-width="1.6"') + 'stroke="#34d399">' + FLAME + '</svg>';
+var V_OFF = SV.replace('stroke-width="2"', 'stroke-width="1.6"') + 'stroke="#f2525b">' + FLAME + '<path d="M3 3l18 18" stroke-width="2.2"/></svg>';
+
+function wxInfo(wmo, isDay) {
+  if (wmo == null) return { icon: '', desc: '' };
+  if (wmo === 0)  return { icon: isDay ? I.sun : I.moon, desc: '맑음' };
+  if (wmo <= 2)   return { icon: I.cloud, desc: '구름 조금' };
+  if (wmo === 3)  return { icon: I.cloud, desc: '흐림' };
+  if (wmo <= 48)  return { icon: I.fog, desc: '안개' };
+  if (wmo <= 57)  return { icon: I.rain, desc: '이슬비' };
+  if (wmo <= 67)  return { icon: I.rain, desc: '비' };
+  if (wmo <= 77)  return { icon: I.snow, desc: '눈' };
+  if (wmo <= 82)  return { icon: I.rain, desc: '소나기' };
+  if (wmo <= 86)  return { icon: I.snow, desc: '눈' };
+  return { icon: I.storm, desc: '뇌우' };
+}
+
+// ── 게이지 ──
+function pct(t) {
+  var p = (t - GAUGE_MIN) / (GAUGE_MAX - GAUGE_MIN) * 100;
+  return Math.max(0, Math.min(100, p));
+}
+function initGauge() {
+  var th = pct(THRESHOLD);
+  $('gOn').style.width = th + '%';
+  $('gOff').style.width = (100 - th) + '%';
+  $('gTh').style.left = th + '%';
+  $('gThLbl').textContent = '기준 ' + THRESHOLD + '℃';
+  var html = '';
+  for (var t = GAUGE_MIN; t <= GAUGE_MAX; t += 10) {
+    if (t === THRESHOLD) continue;
+    html += '<span style="left:' + pct(t) + '%">' + fmt0(t) + '℃</span>';
+  }
+  $('gScale').innerHTML = html;
+}
+
+// ── 렌더 ──
+function render(data) {
+  var cur = data && data.current, t = cur ? cur.temperature_2m : null;
+  var screen = $('screen');
+
+  $('loc').textContent = LOCATION.name + ' 현재 기온';
+  if (t == null) {
+    screen.className = 'screen';
+    $('nowTemp').className = 'now-temp na';
+    $('nowTemp').innerHTML = '--<span class="u">℃</span>';
+    $('vIcon').innerHTML = '';
+    $('vTitle').textContent = '확인 중';
+    $('gMark').style.display = 'none';
+    $('gMarkLbl').style.display = 'none';
+  } else {
+    var on = allowed(t);
+    screen.className = 'screen ' + (on ? 'on' : 'off');
+    $('nowTemp').className = 'now-temp';
+    $('nowTemp').innerHTML = fmt1(t) + '<span class="u">℃</span>';
+    $('vIcon').innerHTML = on ? V_ON : V_OFF;
+    $('vTitle').textContent = on ? '난방 가동 가능' : '난방 가동 금지';
+    var p = pct(t);
+    $('gMark').style.left = p + '%';
+    // 양 끝에서는 글자가 게이지 밖으로 나가지 않게 안쪽으로 붙인다
+    $('gMarkLbl').style.left = Math.max(8, Math.min(92, p)) + '%';
+    $('gMarkLbl').textContent = '현재 ' + fmt1(t) + '℃';
+    $('gMark').style.display = 'block';
+    $('gMarkLbl').style.display = 'block';
+  }
+  $('vSub').textContent = '기준 ' + THRESHOLD + '℃ 이하 난방 가동';
+
+  var wx = wxInfo(cur ? cur.weathercode : null, cur ? cur.is_day : 1);
+  $('wxIcon').innerHTML = wx.icon;
+  $('wxDesc').innerHTML = wx.desc || '&nbsp;';
+  $('feels').textContent = cur && cur.apparent_temperature != null ? fmt1(cur.apparent_temperature) + '℃' : '--';
+
+  // 오늘 최저/최고 (daily 의 첫 날 = 오늘)
+  var dl = data && data.daily;
+  $('lo').textContent = dl && dl.temperature_2m_min ? fmt0(dl.temperature_2m_min[0]) + '℃' : '--';
+  $('hi').textContent = dl && dl.temperature_2m_max ? fmt0(dl.temperature_2m_max[0]) + '℃' : '--';
+
+  renderHours(data && data.hourly);
+
+  var up = data && data.fetchedAt, stale = !up || Date.now() - up > STALE_MS;
+  $('upTxt').textContent = up ? '업데이트 ' + fmtTime(up) : '불러오는 중';
+  $('upBox').className = 'footer-left' + (stale ? ' stale' : '');
+}
+
+// 지금 이후 12시간. hourly.time 은 한국 시각 "2026-11-13T15:00" 형식이라 문자열 비교로 충분하다.
+function renderHours(hr) {
+  var z = seoul();
+  var nowKey = z.y + '-' + pad2(z.mo) + '-' + pad2(z.d) + 'T' + pad2(z.h) + ':00';
+  var cols = [], i;
+  if (hr && hr.time) {
+    for (i = 0; i < hr.time.length && cols.length < 12; i++) {
+      if (hr.time[i] > nowKey && hr.temperature_2m[i] != null) cols.push([hr.time[i], hr.temperature_2m[i]]);
+    }
+  }
+  var html = '';
+  for (i = 0; i < 12; i++) {
+    var c = cols[i];
+    if (c) {
+      var h = parseInt(c[0].substr(11, 2), 10);
+      html += '<div class="h-col"><div class="h-time">' + (h === 0 ? '0시' : h + '시') + '</div>' +
+        // "−10.3" 처럼 다섯 글자면 칸을 넘치지 않게 글자를 줄인다
+        '<div class="h-temp' + (fmt1(c[1]).length >= 5 ? ' long' : '') + '">' + fmt1(c[1]) + '</div>' +
+        '<div class="h-dot ' + (allowed(c[1]) ? 'on' : 'off') + '"></div></div>';
+    } else {
+      html += '<div class="h-col"><div class="h-time">--</div><div class="h-temp" style="color:#2b3240">--</div><div class="h-dot"></div></div>';
+    }
+  }
+  $('hours').innerHTML = html;
+}
+
+var lastData = null;
+function loadData() {
+  getJSON(DATA_URL, function (err, d) {
+    if (err || !d || !d.current) return;
+    d.fetchedAt = Date.now();
+    lastData = d;
+    render(d);
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(d)); } catch (e) {}
+  });
+}
+
+// 네트워크가 늦거나 끊겨도 마지막으로 받은 값을 먼저 보여준다
+try {
+  var cached = localStorage.getItem(CACHE_KEY);
+  if (cached) { lastData = JSON.parse(cached); }
+} catch (e) {}
+initGauge();
+render(lastData || {});
+
+updateClock();
+setInterval(updateClock, 1000);
+loadData();
+setInterval(loadData, 10 * 60 * 1000);
+// 시간이 지나 시간별 예보 칸이 밀리는 것과 갱신이 멈췄을 때 주황색 표시를 위해 1분마다 다시 그린다
+setInterval(function () { render(lastData || {}); }, 60 * 1000);
+
+// 1080x1920 디자인을 뷰포트의 가로/세로에 각각 꽉 맞춘다(비율 무시, 여백 없음).
+// xtrmCAST 플레이어(가로형 설정)는 웹페이지를 세로 패널과 다른 비율의 영역에
+// 그리므로, 여백 없이 채우는 것을 우선한다. 일반 브라우저에서는 찌그러져 보일 수 있다.
+// 플레이어가 쿼리스트링을 떼어낼 수 있으므로 #debug=1 형태도 허용한다.
+var URL_FLAGS = window.location.search + window.location.hash;
+// ?debug=1 : 플레이어 브라우저가 보고하는 뷰포트 값과 뷰포트 경계를 화면에 표시
+var DEBUG_MODE = /[?&#]debug=1/.test(URL_FLAGS);
+
+function fitScreen() {
+  // CSS 퍼센트가 기준으로 삼는 레이아웃 뷰포트를 우선 사용한다.
+  // (window.innerWidth 는 스크롤바/줌/에뮬레이션에서 어긋날 수 있음)
+  var d = document.documentElement;
+  var w = d.clientWidth || window.innerWidth;
+  var h = d.clientHeight || window.innerHeight;
+  if (!w || !h) return; // 뷰포트가 0인 상태(숨김/프리로드)에서는 건너뜀
+  var sx = w / 1080;
+  var sy = h / 1920;
+  var el = document.querySelector('.screen');
+  var t = 'scale(' + sx + ', ' + sy + ')'; // transform-origin 0 0 기준
+  el.style.webkitTransform = t;
+  el.style.transform = t;
+  if (DEBUG_MODE) renderDebug();
+}
+
+function renderDebug() {
+  var box = document.getElementById('dbg');
+  if (!box) {
+    // 자홍색 테두리 = 페이지가 받은 뷰포트의 실제 경계
+    var frame = document.createElement('div');
+    frame.style.cssText = 'position:fixed;left:0;top:0;right:0;bottom:0;' +
+      'border:8px solid #ff00ff;z-index:9998;pointer-events:none;';
+    document.body.appendChild(frame);
+    box = document.createElement('div');
+    box.id = 'dbg';
+    box.style.cssText = 'position:fixed;left:16px;top:16px;right:16px;z-index:9999;' +
+      'background:rgba(0,0,0,.85);color:#00ff66;font-family:monospace;' +
+      'white-space:pre-wrap;word-break:break-all;padding:12px;line-height:1.35;';
+    document.body.appendChild(box);
+  }
+  var d = document.documentElement;
+  var el = document.querySelector('.screen');
+  var r = el.getBoundingClientRect();
+  var ds = d.style;
+  box.style.fontSize = Math.max(12, Math.round(Math.min(d.clientWidth, d.clientHeight) / 26)) + 'px';
+  box.textContent = [
+    'inner   ' + window.innerWidth + ' x ' + window.innerHeight,
+    'client  ' + d.clientWidth + ' x ' + d.clientHeight,
+    'screen  ' + screen.width + ' x ' + screen.height,
+    'dpr     ' + (window.devicePixelRatio || 1),
+    'flags   ' + (URL_FLAGS || '(없음)'),
+    'tf-css  ' + (('transform' in ds) || ('webkitTransform' in ds)),
+    'content ' + Math.round(r.left) + ',' + Math.round(r.top) + '  ' +
+      Math.round(r.right - r.left) + ' x ' + Math.round(r.bottom - r.top),
+    'data    ' + (lastData && lastData.current ? lastData.current.time + ' ' + lastData.current.temperature_2m + '℃' : '(없음)'),
+    'ua      ' + navigator.userAgent
+  ].join('\n');
+}
+window.addEventListener('resize', fitScreen);
+window.addEventListener('orientationchange', fitScreen);
+window.addEventListener('load', fitScreen);
+document.addEventListener('visibilitychange', fitScreen);
+setInterval(fitScreen, 1000); // 일부 DID 플레이어는 resize 이벤트를 안 보냄
+fitScreen();
+</script>
+</body>
+</html>
