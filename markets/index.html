@@ -48,6 +48,7 @@
     .r-value.na { color: #2b3240; }
     .r-chg { margin-top: 12px; }
     .r-asof { font-size: 1.1rem; color: #4a5263; margin-top: 8px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .r-asof.stale { color: #f5b041; font-weight: 700; }
 
   </style>
 </head>
@@ -115,10 +116,15 @@
 <script>
 // 구형 DID 플레이어(옛 Android WebView / Tizen 등) 호환을 위해 ES5 문법만 사용
 
-// GitHub Actions(market-data.yml)가 30분마다 갱신하는 파일
+// GitHub Actions(market-data.yml)가 갱신하는 파일. 예약 실행이 몇 시간씩 밀릴 수 있다.
 var DATA_URL = 'https://raw.githubusercontent.com/jiyeon9047/stech1/market-data/markets.json';
 var CACHE_KEY = 'stech-markets';
-var STALE_MS = 2 * 60 * 60 * 1000; // 2시간 넘게 갱신이 없으면 하단 표시를 주황색으로
+
+// 값마다 바뀌는 주기가 달라서 '오래됨' 기준도 따로 둔다. 오래된 행은 기준 시각이 주황색이 된다.
+var HOUR = 60 * 60 * 1000, DAY = 24 * HOUR;
+var OIL_STALE_MS = 3 * HOUR;    // 유가: 장이 열려 있는데 가격이 3시간 넘게 멈춰 있으면
+var YIELD_STALE_DAYS = 4;       // 국채: 종가 날짜가 4일 넘게 지났으면(주말·휴일 감안)
+var BASE_STALE_MS = 3 * DAY;    // 기준금리: 3일 넘게 확인하지 못했으면
 
 var ROWS = [
   { id: 'Brent',  key: 'brent',  kind: 'oil',   name: '브렌트유', sub: 'Brent · ICE',    color: '#cfd4dd' },
@@ -195,6 +201,49 @@ function fmtTime(iso) {
   return pad2(z.mo) + '.' + pad2(z.d) + ' ' + pad2(z.h) + ':' + pad2(z.m);
 }
 
+// ── 오래됨 판정 ──
+// 해당 월의 n번째(n=-1 이면 마지막) 일요일 0시(UTC 기준 날짜)의 ms
+function sundayUTC(y, mo, n) {
+  if (n > 0) {
+    var first = new Date(Date.UTC(y, mo, 1)).getUTCDay();
+    return Date.UTC(y, mo, 1 + (7 - first) % 7 + 7 * (n - 1));
+  }
+  var last = new Date(Date.UTC(y, mo + 1, 0));
+  return Date.UTC(y, mo, last.getUTCDate() - last.getUTCDay());
+}
+// 뉴욕 시각의 { day(0~6), h }. 서머타임(3월 둘째 일요일 02:00 ~ 11월 첫째 일요일 02:00)을 직접 계산한다.
+function newYork(t) {
+  var y = new Date(t).getUTCFullYear(), H = 3600000;
+  var dst = t >= sundayUTC(y, 2, 2) + 7 * H && t < sundayUTC(y, 10, 1) + 6 * H;
+  var e = new Date(t + (dst ? -4 : -5) * H);
+  return { day: e.getUTCDay(), h: e.getUTCHours() };
+}
+// 유가 선물 거래 시간(뉴욕): 일 18:00 ~ 금 17:00, 매일 17:00~18:00 휴장
+function oilOpen(t) {
+  var n = newYork(t);
+  if (n.day === 6) return false;
+  if (n.day === 5 && n.h >= 17) return false;
+  if (n.day === 0 && n.h < 18) return false;
+  return n.h !== 17;
+}
+function isStale(row, d, data) {
+  var now = Date.now();
+  if (row.kind === 'oil') {
+    var pt = Date.parse(d.time);
+    // 장이 3시간 넘게 계속 열려 있었는데도 가격이 3시간 넘게 그대로일 때만
+    return !isNaN(pt) && oilOpen(now) && oilOpen(now - OIL_STALE_MS) && now - pt > OIL_STALE_MS;
+  }
+  if (row.kind === 'yield') {
+    if (!d.date) return false;
+    var z = seoul(), today = Date.UTC(z.y, z.mo - 1, z.d);
+    var p = d.date.split('-'), day = Date.UTC(+p[0], +p[1] - 1, +p[2]);
+    return (today - day) / DAY > YIELD_STALE_DAYS;
+  }
+  // 기준금리: 항목별 마지막 성공 시각, 예전 데이터면 파일 갱신 시각
+  var f = Date.parse(d.fetched || data.updated);
+  return isNaN(f) || now - f > BASE_STALE_MS;
+}
+
 function pill(diff, text) {
   var cls = diff > 0.00001 ? 'up' : (diff < -0.00001 ? 'down' : 'flat');
   var arrow = cls === 'up' ? '▲ ' : (cls === 'down' ? '▼ ' : '');
@@ -232,8 +281,8 @@ function chart(row, hist) {
     '<div class="chart-axis"><span>' + shortDate(hist[0][0]) + '</span><span>' + shortDate(hist[n - 1][0]) + '</span></div>';
 }
 
-function renderRow(row, d) {
-  var value = '<div class="r-value na">--</div>', chg = '', asof = '';
+function renderRow(row, d, data) {
+  var value = '<div class="r-value na">--</div>', chg = '', asof = '', stale = false;
   if (d) {
     if (row.kind === 'oil' && d.price != null) {
       var diff = d.price - d.prev;
@@ -256,11 +305,14 @@ function renderRow(row, d) {
         chg = pill(0, '');
       }
     }
+    stale = isStale(row, d, data);
+    if (stale) asof = (asof ? asof + ' · ' : '') + '갱신 지연';
   }
   $('row' + row.id).innerHTML =
     '<div class="r-left"><div class="r-name">' + row.name + '</div><div class="r-sub">' + row.sub + '</div></div>' +
     '<div class="r-chart">' + chart(row, d && d.hist) + '</div>' +
-    '<div class="r-right">' + value + '<div class="r-chg">' + chg + '</div><div class="r-asof">' + asof + '</div></div>';
+    '<div class="r-right">' + value + '<div class="r-chg">' + chg + '</div><div class="r-asof' + (stale ? ' stale' : '') + '">' + asof + '</div></div>';
+  return stale;
 }
 
 // 값이 오른쪽 칸 폭을 넘으면 넘지 않을 때까지 줄인다 (미국 기준금리 범위 등)
@@ -278,11 +330,14 @@ function fitValues() {
 }
 
 function render(data) {
-  for (var i = 0; i < ROWS.length; i++) renderRow(ROWS[i], data[ROWS[i].key]);
+  var staleRows = 0;
+  for (var i = 0; i < ROWS.length; i++) if (renderRow(ROWS[i], data[ROWS[i].key], data)) staleRows++;
   fitValues();
-  var up = Date.parse(data.updated), stale = isNaN(up) || Date.now() - up > STALE_MS;
-  $('upTxt').textContent = isNaN(up) ? '업데이트 정보 없음' : '업데이트 ' + fmtTime(data.updated);
-  $('upBox').className = 'footer-left' + (stale ? ' stale' : '');
+  // 하단은 마지막 수집 시각만 알리고, 오래된 행이 있을 때만 주황색
+  var up = Date.parse(data.updated);
+  $('upTxt').textContent = isNaN(up) ? '업데이트 정보 없음'
+    : '업데이트 ' + fmtTime(data.updated) + (staleRows ? ' · ' + staleRows + '개 항목 갱신 지연' : '');
+  $('upBox').className = 'footer-left' + (isNaN(up) || staleRows ? ' stale' : '');
 }
 
 var lastData = null;

@@ -13,6 +13,8 @@ GitHub Actions에서 실행되어 markets.json 을 만든다. 표준 라이브�
   - 한국 기준금리·국고채 10년: 한국은행 ECOS (ECOS_API_KEY, 없으면 시험용 sample 키)
 
 각 항목의 hist 는 추이 그래프용 [날짜, 값] 목록(오래된 순)이다.
+각 항목의 fetched 는 그 항목을 마지막으로 성공적으로 받은 시각(UTC)이다. 실패한 항목은
+직전 값과 함께 예전 fetched 가 그대로 남으므로, 페이지가 항목별로 오래됐는지 판단할 수 있다.
 """
 import csv
 import datetime as dt
@@ -183,16 +185,18 @@ def main(prev_path, out_path):
     except Exception:
         out = {}
     errors = []
+    now = dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
     for key, job in JOBS:
         try:
             out[key] = job()
+            out[key]['fetched'] = now
             print('ok   %-6s %s' % (key, json.dumps({k: v for k, v in out[key].items() if k != 'hist'})))
         except Exception as e:
             # URL에 ECOS 키가 들어 있으므로 예외 메시지만 남긴다
             msg = '%s: %s' % (type(e).__name__, str(e).replace(ECOS_KEY, '***'))
             errors.append({'item': key, 'error': msg[:200]})
             print('FAIL %-6s %s (keeping previous)' % (key, msg))
-    out['updated'] = dt.datetime.now(dt.timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')
+    out['updated'] = now
     out['errors'] = errors
     with open(out_path, 'w', encoding='utf-8') as f:
         json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
