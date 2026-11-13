@@ -1,0 +1,114 @@
+/* ═══════════════════════════════════════════════════════════
+   S-TECH DID 공통 스타일
+   모든 화면(메인·난방·금리유가·중국/미국 공휴일)이 함께 쓴다.
+
+   구형 DID 플레이어(옛 Android WebView 등) 호환을 위해
+   CSS 변수(var(--x))는 쓰지 않고 값을 직접 적는다. 색을 바꿀 때는
+   아래 팔레트 값을 이 파일과 각 화면에서 함께 찾아 바꾼다.
+
+   팔레트 (로고 기준)
+     브랜드 레드     #d9222f   강조선, 마커, D-day, 공휴일
+     레드(글자용)    #f2525b   어두운 배경 위 빨간 글자
+     브랜드 그레이   #adadad   로고 'TECH' 회색
+     배경           #0b0e14
+     글자 1/2/3/4   #f3f5f8 / #a3abb9 / #6b7384 / #454d5c
+     선             rgba(255,255,255,.07)
+     의미 색        상승 #ff6b6b · 하락 #6ea8ff · 정상/가능 #34d399 · 주의 #f5b041
+   ═══════════════════════════════════════════════════════════ */
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0b0e14;
+  font-family: 'Pretendard', 'Noto Sans KR', sans-serif;
+  color: #f3f5f8;
+}
+
+.screen {
+  width: 1080px;
+  height: 1920px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background:
+    radial-gradient(1000px 700px at 100% 0%, rgba(217,34,47,.10), transparent 70%),
+    #0b0e14;
+  /* fixed: 축소 전 1080x1920 박스가 문서 크기를 키우지 않게 한다.
+     문서가 화면보다 크면 WebView가 페이지를 축소해 여백이 생길 수 있다. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  -webkit-transform-origin: 0 0;
+  transform-origin: 0 0;
+}
+
+/* 맨 위 브랜드 레드 띠 */
+.topbar { flex-shrink: 0; height: 6px; background: #d9222f; }
+
+/* ════════════════════════════
+   HEADER
+════════════════════════════ */
+.hdr {
+  flex-shrink: 0;
+  height: 196px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 64px;
+  border-bottom: 1px solid rgba(255,255,255,.07);
+}
+.brand { display: flex; align-items: center; min-width: 0; }
+.logo { height: 92px; width: auto; display: block; margin-left: -14px; }
+.brand-txt { margin-left: 20px; padding-left: 30px; border-left: 1px solid rgba(255,255,255,.12); white-space: nowrap; }
+.eyebrow { font-size: 1.1rem; font-weight: 700; letter-spacing: .32em; color: #d9222f; }
+.title { font-size: 3.2rem; font-weight: 800; letter-spacing: -.02em; color: #f3f5f8; line-height: 1.15; margin-top: 6px; }
+.clock { text-align: right; flex-shrink: 0; }
+.clock-label { font-size: 1.2rem; font-weight: 600; color: #6b7384; margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+.clock-time { font-size: 3.8rem; font-weight: 700; letter-spacing: .01em; font-variant-numeric: tabular-nums; color: #f3f5f8; line-height: 1; }
+.clock-date { font-size: 1.3rem; color: #6b7384; margin-top: 10px; font-variant-numeric: tabular-nums; }
+.clock-date b { color: #a3abb9; font-weight: 700; }
+
+/* 헤더와 푸터 사이 본문 */
+.main { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 40px 64px 0; }
+
+/* ════════════════════════════
+   패널 · 섹션 제목
+════════════════════════════ */
+.panel {
+  border-radius: 24px;
+  background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.018));
+  border: 1px solid rgba(255,255,255,.07);
+}
+.sec-head { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; padding: 0 4px; }
+.sec-title { display: flex; align-items: center; }
+.sec-bar { width: 5px; height: 26px; border-radius: 3px; background: #d9222f; margin-right: 16px; }
+.sec-name { font-size: 1.65rem; font-weight: 700; color: #e3e7ee; }
+.sec-en { font-size: 1.05rem; font-weight: 600; letter-spacing: .24em; color: #454d5c; margin-left: 14px; }
+.sec-meta { font-size: 1.2rem; color: #6b7384; }
+
+/* 상승 / 하락 / 보합 알약 (한국식: 상승 빨강, 하락 파랑) */
+.pill {
+  display: inline-block; padding: 5px 14px; border-radius: 999px;
+  font-size: 1.45rem; font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.pill.up   { color: #ff6b6b; background: rgba(255,107,107,.13); }
+.pill.down { color: #6ea8ff; background: rgba(110,168,255,.14); }
+.pill.flat { color: #8b93a3; background: rgba(255,255,255,.06); }
+
+/* ════════════════════════════
+   FOOTER
+════════════════════════════ */
+.footer {
+  flex-shrink: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 22px 64px 40px; margin-top: 32px;
+  border-top: 1px solid rgba(255,255,255,.07);
+  font-size: 1.1rem; color: #454d5c;
+}
+.footer-left { display: flex; align-items: center; font-variant-numeric: tabular-nums; }
+.footer-dot { width: 8px; height: 8px; border-radius: 50%; background: #34d399; margin-right: 10px; animation: blink 2s infinite; }
+.footer-left.stale { color: #f5b041; }
+.footer-left.stale .footer-dot { background: #f5b041; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
+@-webkit-keyframes blink { 0%,100%{opacity:1} 50%{opacity:.25} }
