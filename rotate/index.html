@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1, user-scalable=no"/>
+  <title>S-TECH DID</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 100%; height: 100%; overflow: hidden; background: #0b0e14; }
+    /* 모든 화면을 미리 띄워 두고 겹쳐 놓은 뒤, 보일 화면만 불투명하게 한다.
+       display:none 이면 각 페이지의 화면 맞춤(fitScreen)이 뷰포트 0으로 건너뛰므로 숨기지 않고 투명하게만 둔다. */
+    .slide {
+      position: fixed; left: 0; top: 0; width: 100%; height: 100%;
+      border: 0; display: block; background: #0b0e14;
+      opacity: 0; visibility: hidden; z-index: 0;
+      -webkit-transition: opacity .8s ease, visibility 0s linear .8s;
+      transition: opacity .8s ease, visibility 0s linear .8s;
+    }
+    .slide.show {
+      opacity: 1; visibility: visible; z-index: 1;
+      -webkit-transition: opacity .8s ease;
+      transition: opacity .8s ease;
+    }
+  </style>
+</head>
+<body>
+<script>
+// 구형 DID 플레이어(옛 Android WebView / Tizen 등) 호환을 위해 ES5 문법만 사용
+
+// ── 순환할 화면 (순서대로, sec = 보여 줄 초) ──
+// 화면을 빼거나 순서를 바꾸려면 이 목록만 고치면 된다.
+var SLIDES = [
+  { url: '../',         sec: 30 },  // 환율 · 세계 날씨/시간
+  { url: '../heating/', sec: 20 },  // 난방 가동 안내
+  { url: '../markets/', sec: 20 },  // 금리 · 유가
+  { url: '../china/',   sec: 20 },  // 중국 공휴일
+  { url: '../us/',      sec: 20 }   // 미국 공휴일
+];
+
+// 배포한 새 코드를 DID가 받아 가도록 매일 이 시각(한국 시각)에 전체를 새로 고친다
+var RELOAD_HOUR_KST = 4;
+
+// ?debug=1 / #debug=1 은 각 화면에도 넘겨 준다
+var FLAGS = /[?&#]debug=1/.test(window.location.search + window.location.hash) ? '#debug=1' : '';
+
+// 불러올 때마다 주소를 바꿔 브라우저 캐시에 남은 예전 화면 대신 새로 배포된 화면을 받는다
+var startedAt = Date.now();
+var views = [];
+for (var i = 0; i < SLIDES.length; i++) {
+  var f = document.createElement('iframe');
+  f.className = 'slide' + (i === 0 ? ' show' : '');
+  f.setAttribute('scrolling', 'no');
+  f.setAttribute('frameborder', '0');
+  f.src = SLIDES[i].url + '?r=' + startedAt + FLAGS;
+  document.body.appendChild(f);
+  views.push(f);
+}
+
+var cur = 0;
+function next() {
+  var prev = cur;
+  cur = (cur + 1) % SLIDES.length;
+  if (cur !== prev) {
+    views[cur].className = 'slide show';
+    views[prev].className = 'slide';
+  }
+  setTimeout(next, SLIDES[cur].sec * 1000);
+}
+setTimeout(next, SLIDES[0].sec * 1000);
+
+// 한국 시각의 시(0~23). 한국은 서머타임이 없어 +9시간이면 충분하다.
+function kstHour() {
+  var d = new Date();
+  return new Date(d.getTime() + (d.getTimezoneOffset() + 540) * 60000).getHours();
+}
+setInterval(function () {
+  // 켜자마자 그 시각이면 바로 다시 새로 고침하지 않도록 1시간 넘게 돈 뒤에만
+  if (kstHour() === RELOAD_HOUR_KST && Date.now() - startedAt > 60 * 60 * 1000) {
+    window.location.reload();
+  }
+}, 5 * 60 * 1000);
+</script>
+</body>
+</html>
