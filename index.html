@@ -32,9 +32,15 @@
       font-size: 1.15rem; font-weight: 700; letter-spacing: .12em; color: #34d399;
     }
     .live .footer-dot { margin-right: 9px; }
+    /* 실시간 출처를 못 받아 하루 1회 기준값을 보여줄 때 / 실시간 값이 오래됐을 때 */
+    .live.daily { border-color: rgba(255,255,255,.14); background: rgba(255,255,255,.05); color: #a3abb9; }
+    .live.daily .footer-dot { background: #a3abb9; animation: none; }
+    .live.stale { border-color: rgba(245,176,65,.4); background: rgba(245,176,65,.1); color: #f5b041; }
+    .live.stale .footer-dot { background: #f5b041; animation: none; }
     .fx-bottom { display: flex; align-items: flex-end; justify-content: space-between; margin-top: 26px; }
     .fx-val { font-size: 9.5rem; font-weight: 800; letter-spacing: -.04em; line-height: .95; color: #ffffff; font-variant-numeric: tabular-nums; white-space: nowrap; }
     .fx-val .won { font-size: .4em; font-weight: 700; color: #f2525b; letter-spacing: 0; margin-right: 12px; vertical-align: .9em; }
+    .fx-val .dec { font-size: .42em; font-weight: 700; color: #a3abb9; letter-spacing: -.02em; }
     .fx-val .unit { font-size: .3em; font-weight: 600; color: #6b7384; letter-spacing: 0; margin-left: 12px; }
     .fx-side { text-align: right; padding-bottom: 10px; }
     .fx-time { font-size: 1.15rem; color: #454d5c; margin-top: 12px; font-variant-numeric: tabular-nums; }
@@ -94,16 +100,16 @@
           <div class="flag"><img src="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.2.3/flags/4x3/us.svg" alt="" onerror="this.parentNode.innerHTML='🇺🇸'"/></div>
           <div class="fx-id-txt">
             <div class="fx-pair">USD / KRW</div>
-            <div class="fx-desc">미국 달러 → 원화 · 실시간 매매 기준</div>
+            <div class="fx-desc" id="rateDesc">미국 달러 → 원화 · 시장 환율(중간값)</div>
           </div>
         </div>
-        <div class="live"><span class="footer-dot"></span>LIVE</div>
+        <div class="live daily" id="rateBadge"><span class="footer-dot"></span><span id="rateBadgeTxt">불러오는 중</span></div>
       </div>
       <div class="fx-bottom">
-        <div class="fx-val"><span class="won">₩</span><span id="rateVal">——</span><span class="unit">원</span></div>
+        <div class="fx-val"><span class="won">₩</span><span id="rateVal">——</span><span class="dec" id="rateDec"></span><span class="unit">원</span></div>
         <div class="fx-side">
-          <div id="rateChg"><span class="pill flat">불러오는 중</span></div>
           <div class="fx-time" id="rateTime">&nbsp;</div>
+          <div class="fx-time" id="rateSrc">&nbsp;</div>
         </div>
       </div>
     </div>
@@ -264,10 +270,6 @@ function renderCities() {
   document.getElementById('cityRows').innerHTML = html;
 }
 
-function seoulHMS() {
-  var z = zoned(new Date(), 'Asia/Seoul');
-  return pad2(z.h) + ':' + pad2(z.m) + ':' + pad2(z.s);
-}
 function updateClock() {
   var z = zoned(new Date(), 'Asia/Seoul');
   document.getElementById('koDate').textContent = z.y + '년 ' + z.mo + '월 ' + z.d + '일 (' + WD[z.day] + ')';
@@ -275,34 +277,60 @@ function updateClock() {
 }
 
 function formatNum(n) {
-  return String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-var prevRate = null;
-function applyRate(rate) {
-  document.getElementById('rateVal').textContent = formatNum(rate);
-  var el = document.getElementById('rateChg');
-  // 직전 조회(3분 전) 대비 변동
-  if (prevRate !== null && Math.abs(rate - prevRate) >= 0.3) {
-    var diff = rate - prevRate, up = diff > 0;
-    el.innerHTML = '<span class="pill ' + (up ? 'up' : 'down') + '">' + (up ? '▲ ' : '▼ ') + Math.abs(diff).toFixed(2) + '원</span>';
-  } else if (prevRate !== null) {
-    el.innerHTML = '<span class="pill flat">변동 없음</span>';
+// ── 환율 ──
+// 1순위: Coinbase 공개 환율(시장 중간값, 약 1분 단위 갱신, 브라우저에서 바로 조회 가능)
+// 예비: exchangerate-api → frankfurter (둘 다 하루 1회 갱신). 실시간 값을 못 받을 때만 쓴다.
+var FX_LIVE_URL = 'https://api.coinbase.com/v2/exchange-rates?currency=USD';
+var FX_LIVE_STALE_MS = 10 * 60 * 1000;   // 실시간 값이 10분 넘게 갱신되지 않으면 '지연'
+var fx = { rate: null, src: null, at: 0 }; // src: 'live' | 'daily'
+
+function showRate() {
+  var badge = document.getElementById('rateBadge'), txt = document.getElementById('rateBadgeTxt');
+  if (fx.rate == null) { badge.className = 'live daily'; txt.textContent = '불러오는 중'; return; }
+  var parts = fx.rate.toFixed(2).split('.');
+  document.getElementById('rateVal').textContent = formatNum(parts[0]);
+  document.getElementById('rateDec').textContent = '.' + parts[1];
+  var z = zoned(new Date(fx.at), 'Asia/Seoul');
+  // 일일 기준값은 받아 온 시각이 아니라 출처가 정한 기준일을 보여준다
+  document.getElementById('rateTime').textContent = fx.src === 'live'
+    ? '갱신 ' + pad2(z.h) + ':' + pad2(z.m) + ':' + pad2(z.s)
+    : '기준일 ' + (fx.date ? fx.date.replace(/-/g, '.') : '—');
+  if (fx.src === 'live') {
+    var stale = Date.now() - fx.at > FX_LIVE_STALE_MS;
+    badge.className = 'live' + (stale ? ' stale' : '');
+    txt.textContent = stale ? '지연' : 'LIVE';
+    document.getElementById('rateDesc').textContent = '미국 달러 → 원화 · 시장 환율(중간값)';
+    document.getElementById('rateSrc').textContent = '출처 Coinbase';
   } else {
-    el.innerHTML = '';
+    badge.className = 'live daily';
+    txt.textContent = '일일 기준';
+    document.getElementById('rateDesc').textContent = '미국 달러 → 원화 · 하루 1회 갱신 기준';
+    document.getElementById('rateSrc').textContent = '실시간 환율 연결 대기 중';
   }
-  prevRate = rate;
-  document.getElementById('rateTime').textContent = '갱신 ' + seoulHMS();
 }
-function fetchRate() {
+
+function fetchDailyRate() {
   getJSON('https://api.exchangerate-api.com/v4/latest/USD', function (err, d) {
     var rate = (!err && d && d.rates) ? d.rates.KRW : null;
-    if (rate) return applyRate(rate);
-    // 백업: frankfurter (구 .app 도메인은 리다이렉트되어 실패하므로 .dev/v1 사용)
+    if (rate) { fx = { rate: rate, src: 'daily', at: Date.now(), date: d.date }; return showRate(); }
+    // frankfurter (구 .app 도메인은 리다이렉트되어 실패하므로 .dev/v1 사용)
     getJSON('https://api.frankfurter.dev/v1/latest?base=USD&symbols=KRW', function (err2, d2) {
       var r2 = (!err2 && d2 && d2.rates) ? d2.rates.KRW : null;
-      if (r2) applyRate(r2);
+      if (r2) { fx = { rate: r2, src: 'daily', at: Date.now(), date: d2.date }; showRate(); }
     });
+  });
+}
+
+function fetchRate() {
+  getJSON(FX_LIVE_URL, function (err, d) {
+    var rate = (!err && d && d.data && d.data.rates) ? parseFloat(d.data.rates.KRW) : NaN;
+    if (rate > 0) { fx = { rate: rate, src: 'live', at: Date.now() }; return showRate(); }
+    // 실시간 값이 아직 쓸 만하면 그대로 두고(배지는 시간이 지나면 '지연'), 없으면 일일 기준값으로
+    if (fx.src === 'live' && Date.now() - fx.at <= FX_LIVE_STALE_MS) return showRate();
+    if (fx.src !== 'live') fetchDailyRate(); else showRate();
   });
 }
 
@@ -327,7 +355,7 @@ renderCities();
 setInterval(function () { updateClock(); renderCities(); }, 1000);
 fetchRate();
 fetchWeather();
-setInterval(fetchRate, 3 * 60 * 1000);
+setInterval(fetchRate, 60 * 1000);
 setInterval(fetchWeather, 10 * 60 * 1000);
 
 // 1080x1920 디자인을 뷰포트의 가로/세로에 각각 꽉 맞춘다(비율 무시, 여백 없음).
